@@ -69,8 +69,8 @@ const Display = function(context) {
 
   this.telemetrySetup = function() {
     context.fillStyle = "#a9a9a9";
-    context.font = "30px Arial";
-    context.fillText("Telemetry", 10, 30);
+    context.font = "25px Arial";
+    context.fillText("Telemetry", 10, 20);
 
     this.rect(0.05, 0.05, 0.002, 0.3, "#a9a9a9", 0);
     this.rect(0.05, 0.35, 0.6, 0.002, "#a9a9a9", 0);
@@ -84,16 +84,29 @@ const Display = function(context) {
   }
 
   this.setTelemetryData = function(history) {
-    var yScale = 1;
-    var xDelta = 0.01
-    this.graphPoints = function(data, color) {
-      for (i=0; data.length; i++) {
+    // clear graph
+    this.rect(graphLeftEdge + 0.005, 0, graphWidth + 0.01, graphBottomEdge, "#ffffff", 0);
+    context.fillStyle = "#a9a9a9";
+    context.font = "25px Arial";
+    context.fillText("Telemetry", 10, 20);
+
+    var yScale = 3.14;
+    var standardXDelta = 0.002;
+    var xDelta = 0.002;
+    this.graphData = function(data, color) {
+      if (0.002 * data.length > graphWidth) {
+        xDelta = graphWidth / data.length;
+      }
+      var i;
+      for (i = 0; i < data.length; i++) {
         var yVal = data[i] / yScale;
-        this.circle(graphLeftEdge + 0.01 + (0.02 * i), graphBottomEdge - (yVal * graphHeight), 0.01, color);
+        this.circle(graphLeftEdge + 0.01 + (xDelta * i), graphBottomEdge - (graphHeight * yVal) - 0.005, 0.001, color);
       }
     }
+    this.graphData(history.pValues, "#DB4437");
+    this.graphData(history.vValues, "#4285F4");
+    this.graphData(history.aValues, "#F4B400");
 
-    this.graphPoints([0.5, 0.4], "#DB4437");
   }
 
   this.drawBackgroundGraphics = function() {
@@ -204,14 +217,22 @@ const Simulation = function(display) {
       armVelocity: this.armVelocity,
       armAcceleration: accel
     }
-    // this.history.pValues.push(this.armPosition);
-    // this.history.vValues.push(this.armVelocity);
-    // this.history.aValues.push(accel);
+     this.history.pValues.push(this.armPosition);
+     this.history.vValues.push(this.armVelocity);
+     this.history.aValues.push(accel);
+
+     if (this.history.pValues.length > 500) {
+       this.history = {
+         pValues : [],
+         vValues : [],
+         aValues : []
+       }
+     }
   }
 
   this.render = function() {
     display.setFromSimulation(this.simulationObject);
-    //display.setTelemetryData(this.history);
+    display.setTelemetryData(this.history);
   }
 
   this.startEngine = function() {
