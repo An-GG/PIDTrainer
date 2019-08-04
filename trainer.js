@@ -10,6 +10,7 @@ canvas.addEventListener('click', function(event) {
 }, false);
 
 var currentCode = "";
+var isStopped = false;
 
 
 var mainContext = document.querySelector("canvas").getContext("2d");
@@ -204,6 +205,9 @@ const Display = function(context) {
     var standardXDelta = 0.002;
     var xDelta = 0.002;
     this.graphData = function(data, color, scale) {
+      while(data.length > 490) {
+        data.shift();
+      }
       if (0.002 * data.length > graphWidth) {
         xDelta = graphWidth / data.length;
       }
@@ -293,8 +297,6 @@ const Engine = function(update, render) {
   this.loop = function() {
     this.elapsedTime = window.performance.now() - this.timeOfLastUpdate;
     var updated = false;
-    this.update();
-
     while (this.elapsedTime >= this.timeStep) {
       updated = true;
       this.update();
