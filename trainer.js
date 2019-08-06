@@ -3,11 +3,12 @@ canvas.addEventListener('click', function(event) {
   disp.handleClick(event);
 }, false);
 
-var currentCode = localStorage["code"] || "function loop() {\n  \n  timeout(loop, 20);\n}\n\nloop();";
+var currentCode = localStorage["code"] || "var previousPos = 0;\nvar totalError = 0;\n\nfunction loop() {\n  var target = 150;\n  setGraphTarget(target);\n\n  var kP = 1;\n  var kI = 0.025;\n  var kD = 15;\n\n  var error = target - getArmPosition();\n  var changeInError = error - previousPos;\n  if (Math.abs(error) < 15) {\n    totalError += error;\n    kD = 0;\n  } else {\n  	totalError = 0;\n  }\n  if (Math.abs(error) > 50) {\n  	kD = 0;\n  }\n  \n  previousPos = error;\n\n  var P = kP * error;\n  var I = kI * totalError;\n  var D = kD * changeInError;\n  var output = P + I + D;\n\n  setArmPower(output);\n  setGraphVariable(D);\n\n  timeout(loop, 40);\n}\n\nloop();";
 var isStopped = false;
 
 var currentMass = 1;
 var currentFriction = 1;
+var fontMultiplier = 0.85;
 
 var hide = {
   pos:false,
@@ -30,8 +31,8 @@ var myCodeMirror = CodeMirror.fromTextArea(textarea, {
 });
 
 var mainContext = document.querySelector("canvas").getContext("2d");
-mainContext.canvas.height = 800;
-mainContext.canvas.width = 800;
+mainContext.canvas.height = 700;
+mainContext.canvas.width = 700;
 
 
 // DISPLAY MODULE
@@ -133,7 +134,8 @@ const Display = function(context) {
     } else {
       this.rect(xRatio, yRatio, targetWidth, height, "#4885ed", 0);
     }
-    context.font = "15px Arial";
+    var fontN = 15 * fontMultiplier;
+    context.font = fontN + "px Arial";
     context.fillStyle = "#ffffff";
     this.text(xRatio + (targetWidth - textWidth) / 2, yRatio + textTopMargin, text);
     var frame = {
@@ -170,7 +172,8 @@ const Display = function(context) {
   this.setupUI = function() {
     // Controls Label
     context.fillStyle = "#a9a9a9";
-    context.font = "25px Arial";
+    var fontN = 25 * fontMultiplier
+    context.font = fontN + "px Arial";
     this.text(0.5, 0.45, "Controls");
     this.rect(0.5, 0.46, 0.4, 0.003, "#a9a9a9", 0);
 
@@ -215,10 +218,13 @@ const Display = function(context) {
 
     // Run Button
     function onRun() {
-      isTimeoutEnabled = true;
-      currentCode = myCodeMirror.getValue();
-      localStorage["code"] = JSON.parse(JSON.stringify(currentCode));
-      eval(currentCode);
+      onReset();
+      setTimeout(function() {
+        isTimeoutEnabled = true;
+        currentCode = myCodeMirror.getValue();
+        localStorage["code"] = JSON.parse(JSON.stringify(currentCode));
+        eval(currentCode);
+      }, 60);
     }
     this.button(0.505, 0.49, "RUN", 0.04, onRun, false, "Run");
 
@@ -226,11 +232,13 @@ const Display = function(context) {
 
     // Graph Label
     context.fillStyle = "#a9a9a9";
-    context.font = "25px Arial";
+    var fontN = 25 * fontMultiplier;
+    context.font = fontN + "px Arial";
     this.text(0.5, 0.59, "Graph");
     this.rect(0.5, 0.6, 0.4, 0.003, "#a9a9a9", 0);
 
-    context.font = "normal normal bold 15px Arial";
+    fontN = 15 * fontMultiplier;
+    context.font = "normal normal bold " + fontN + "px Arial";
     context.fillStyle = "#DB4437";
     this.text(0.5, 0.64, "Position");
 
@@ -264,7 +272,8 @@ const Display = function(context) {
 
     // Sim Label
     context.fillStyle = "#a9a9a9";
-    context.font = "25px Arial";
+    var fontN = 25 * fontMultiplier;
+    context.font = fontN + "px Arial";
     this.text(0.5, 0.83, "Simulator");
     this.rect(0.5, 0.84, 0.4, 0.003, "#a9a9a9", 0);
 
@@ -292,7 +301,7 @@ const Display = function(context) {
 
   var graphLeftEdge = 0.05;
   var graphBottomEdge = 0.35;
-  var graphWidth = 0.8;
+  var graphWidth = 0.9;
   var graphHeight = 0.3;
 
   this.target = 0;
@@ -303,7 +312,8 @@ const Display = function(context) {
     this.rect(0.05, 0.35, graphWidth, 0.002, "#a9a9a9", 0);
 
     context.rotate(Math.PI / 2);
-    context.font = "20px Arial";
+    var fontN = 20 * fontMultiplier;
+    context.font = fontN + "px Arial";
     this.text(0.15, -0.016, "Value");
     context.rotate(-Math.PI / 2);
 
@@ -320,7 +330,8 @@ const Display = function(context) {
     this.log = function(x, y, z) {
       this.rect(x, y - 0.02, 0.08, 0.02, "#ffffff", 0);
       context.fillStyle = "#787878";
-      context.font = "normal normal bold 15px Arial";
+      var fontN = 15 * fontMultiplier;
+      context.font = "normal normal bold " + fontN + "px Arial";
       this.text(x, y, z);
     }
 
@@ -343,16 +354,17 @@ const Display = function(context) {
     this.rect(graphLeftEdge + 0.005, 0, graphWidth + 0.01, graphBottomEdge, "#ffffff", 0);
     this.rect(0, 0, graphWidth + 0.01, graphLeftEdge + 0.005, "#ffffff", 0);
     context.fillStyle = "#a9a9a9";
-    context.font = "25px Arial";
+    var fontN = 25 * fontMultiplier;
+    context.font = fontN + "px Arial";
     context.fillText("Telemetry", 10, 30);
 
     //target line
     if (!hide.tar) {
-      this.rect(graphLeftEdge + 0.005, graphBottomEdge - ((this.target / (360)) * graphHeight) - 0.01, graphWidth, 0.001, "#0F9D58", 0);
+      this.rect(graphLeftEdge + 0.005, graphBottomEdge - ((this.target / (360)) * graphHeight) - 0.005, graphWidth, 0.001, "#0F9D58", 0);
     }
 
     var yScale = {min: 0, max: 6.28};
-    var yVelScale = {min: -0.1, max: 0.1};
+    var yVelScale = {min: -0.3, max: 0.3};
     var yAccelScale = {min: -0.01, max: 0.01};
     var pwrScale = {min: -127, max:127};
     var usrScale = {min: 0, max: 1};
@@ -390,8 +402,9 @@ const Display = function(context) {
         } else {
           yVal = (data[i] - scale.min) / (scale.max - scale.min);
         }
-
-        this.circle(graphLeftEdge + 0.01 + (xDelta * i), graphBottomEdge - (graphHeight * yVal) - 0.005, 0.001, color);
+        if (yVal < 1 && yVal > 0) {
+          this.circle(graphLeftEdge + 0.01 + (xDelta * i), graphBottomEdge - (graphHeight * yVal) - 0.005, 0.001, color);
+        }
       }
     }
     if (!hide.pos) {
@@ -413,24 +426,46 @@ const Display = function(context) {
 
   this.drawBackgroundGraphics = function() {
     this.rect(0, 0.4, 0.5, 0.6, "#ffffff", 0);
+    //motor
+    this.rect(0.175, 0.65, 0.18, 0.1, "#181818", 0);
+
     // Draw Center Mount Thing
     this.rect(0.2, 0.6, 0.1, 0.4, "#808080", 0);
+
+    //Encoder
+    this.rect(0.18, 0.63, 0.14, 0.14, "#DB4437", 0);
+
+    var fontN = 17 * fontMultiplier;
+    context.font = fontN + "px Arial";
+    context.rotate(Math.PI / 2);
+    context.fillStyle = "#ffffff";
+
+    //Motor Label
+    this.text(0.662, -0.33, "MOTOR");
+    // Encoder label
+    this.text(0.65, -0.295, "ENCODER");
+    context.rotate(-Math.PI / 2);
   }
   this.drawArmAtAngle = function(angle) {
     this.rect(0.25, 0.7, 0.035, 0.23, "#a9a9a9", angle);
     this.rect(0.25, 0.7, -0.035, 0.23, "#a9a9a9", angle);
-    this.rect(0.25, 0.7, 0.035, -0.07, "#a9a9a9", angle);
-    this.rect(0.25, 0.7, -0.035, -0.07, "#a9a9a9", angle);
+    this.rect(0.25, 0.7, 0.035, -0.06, "#a9a9a9", angle);
+    this.rect(0.25, 0.7, -0.035, -0.06, "#a9a9a9", angle);
   }
 
-  this.drawForegroundGraphics = function() {
+  this.drawForegroundGraphics = function(angle) {
     this.circle(0.25, 0.7, 0.01, "#ffffff");
+    var x = 0.007
+    this.rect(0.25, 0.7, x, x, "#a9a9a9", angle + 0.785);
+    this.rect(0.25, 0.7, x, -x, "#a9a9a9", angle + 0.785);
+    this.rect(0.25, 0.7, -x, x, "#a9a9a9", angle + 0.785);
+    this.rect(0.25, 0.7, -x, -x, "#a9a9a9", angle + 0.785);
   }
 
   this.setFromSimulation = function(simulationObject) {
     this.drawBackgroundGraphics();
     this.drawArmAtAngle(simulationObject.armAngle);
-    this.drawForegroundGraphics();
+    this.drawForegroundGraphics(simulationObject.armAngle);
   }
 
 
@@ -513,12 +548,11 @@ const Simulation = function(display) {
     if (hide.gravity) {
       gravityForce = 0;
     }
-    console.log(gravityForce);
     this.friction = currentFriction / 10;
-    var accel = (this.armForce - this.friction * this.armVelocity + gravityForce) / currentMass;
+    var accel = ((this.armForce * 3) - this.friction * this.armVelocity + gravityForce) / currentMass;
     this.armVelocity += accel;
     this.armPosition += this.armVelocity;
-    
+
     while(this.armPosition < 0) {
       this.armPosition += Math.PI * 2;
     }
@@ -548,9 +582,9 @@ const Simulation = function(display) {
      }
      var pos = this.armPosition;
      setTimeout(function() {
-       var fakeError = (Math.random() - 0.5) / 5;
+       var fakeError = (Math.random() - 0.5) / 10;
        outputPosition = pos + fakeError;
-     }, 20);
+     }, 40);
   }
 
   this.render = function() {
@@ -579,7 +613,7 @@ function setArmPower(voltage) {
   if (voltage < -127) {
     voltage = -127;
   }
-  sim.armForce = (voltage / 12700);
+  sim.armForce = (voltage / (12700));
 }
 
 function setGraphTarget(position) {
