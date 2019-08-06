@@ -5,14 +5,20 @@ canvas.addEventListener('click', function(event) {
 
 var currentCode = localStorage["code"] || "function loop() {\n  \n  timeout(loop, 20);\n}\n\nloop();";
 var isStopped = false;
-var pauseGraph = false;
 
-var hidePos = false;
-var hideVel = false;
-var hideAcc = false;
-var hideTar = false;
-var hidePwr = false;
-var hideUsr = false;
+var currentMass = 1;
+var currentFriction = 1;
+
+var hide = {
+  pos:false,
+  vel:false,
+  acc:true,
+  tar:false,
+  pwr:true,
+  usr:false,
+  pauseGraph:false,
+  gravity:false,
+};
 
 var textarea = document.getElementById("textarea");
 textarea.value = currentCode;
@@ -82,7 +88,6 @@ const Display = function(context) {
   }
 
   this.handleClick = function(event) {
-    console.log(listeners);
     var x = event.pageX - canvas.offsetLeft;
     var y = event.pageY - canvas.offsetTop;
     this.callbackListenerForPoint(x / mainContext.canvas.height, y / mainContext.canvas.width);
@@ -121,24 +126,29 @@ const Display = function(context) {
     context.fill();
   }
 
-  this.button = function(xRatio, yRatio, text, textWidth, onClick, depressed, id) {
-    var targetWidth = 0.09;
+  this.customButton = function(xRatio, yRatio, text, textWidth, onClick, depressed, id, width, height, textTopMargin) {
+    var targetWidth = width;
     if (depressed) {
-      this.rect(xRatio, yRatio, targetWidth, 0.04, "#a9a9a9", 0);
+      this.rect(xRatio, yRatio, targetWidth, height, "#a9a9a9", 0);
     } else {
-      this.rect(xRatio, yRatio, targetWidth, 0.04, "#4885ed", 0);
+      this.rect(xRatio, yRatio, targetWidth, height, "#4885ed", 0);
     }
     context.font = "15px Arial";
     context.fillStyle = "#ffffff";
-    this.text(xRatio + (targetWidth - textWidth) / 2, yRatio + 0.027, text);
+    this.text(xRatio + (targetWidth - textWidth) / 2, yRatio + textTopMargin, text);
     var frame = {
         x: xRatio,
         y: yRatio,
-        w: textWidth + 0.04,
-        h: 0.05
+        w: width,
+        h: height
       }
     addListenerForFrame(frame, onClick, id)
     return frame;
+  }
+
+  this.button = function(xRatio, yRatio, text, textWidth, onClick, depressed, id) {
+    var targetWidth = 0.09;
+    return this.customButton(xRatio, yRatio, text, textWidth, onClick, depressed, id, 0.09, 0.04, 0.027);
   }
   var button = this.button.bind(this);
 
@@ -164,6 +174,30 @@ const Display = function(context) {
     this.text(0.5, 0.45, "Controls");
     this.rect(0.5, 0.46, 0.4, 0.003, "#a9a9a9", 0);
 
+
+    function setUpButton(name, x, y, display, textWidth) {
+      function draw(grayedOut) {
+        return button(x, y, display, textWidth, click, grayedOut, name);
+      }
+      var frame = draw(hide[name]);
+      function click() {
+        if (hide[name]) {
+          hide[name] = false;
+          removeListenerForID(name);
+          setTimeout(function() {
+            draw(false);
+          }, 10);
+        } else {
+          hide[name] = true;
+          removeListenerForID(name);
+          setTimeout(function() {
+            draw(true);
+          }, 10);
+        }
+      }
+    }
+
+
     // Reset Button
     function onReset() {
       currentCode = "";
@@ -188,21 +222,7 @@ const Display = function(context) {
     }
     this.button(0.505, 0.49, "RUN", 0.04, onRun, false, "Run");
 
-    // Pause Graph Resume Button
-    this.onResumeGraph = function() {
-      pauseGraph = false;
-      removeListenerForID("Resume Graph");
-      this.button(0.715, 0.49, "PAUSE", 0.06, this.onPauseGraph.bind(this), false, "Pause Graph");
-    }
-
-
-    // Pause Graph Button
-    this.onPauseGraph = function() {
-      pauseGraph = true;
-      removeListenerForID("Pause Graph");
-      this.button(0.715, 0.49, "PAUSE", 0.06, this.onResumeGraph.bind(this), true, "Resume Graph");
-    }
-    this.button(0.715, 0.49, "PAUSE", 0.06, this.onPauseGraph.bind(this), false, "Pause Graph");
+    setUpButton("pauseGraph", 0.715, 0.49, "PAUSE", 0.06);
 
     // Graph Label
     context.fillStyle = "#a9a9a9";
@@ -229,57 +249,44 @@ const Display = function(context) {
     context.fillStyle = "#800080";
     this.text(0.72, 0.76, "User Set");
 
-    function onHidePos() {
-      button(0.62, 0.614, "HIDE", 0.045, onUnhidePos, true, "Unhide Pos");
-      hidePos = true;
-      console.log("test");
-      removeListenerForID("Hide Pos");
 
+    function setUpHideButton(a,b,c) {
+      setUpButton(a,b,c,"HIDE", 0.045);
     }
-    function onUnhidePos() {
-      hidePos = false;
-      removeListenerForID("Unhide Pos");
-      button(0.62, 0.614, "HIDE", 0.045, onHidePos, false, "Hide Pos");
-    }
-    button(0.62, 0.614, "HIDE", 0.045, onHidePos, false, "Hide Pos");
+
+    setUpHideButton("pos", 0.62, 0.614);
+    setUpHideButton("vel", 0.62, 0.674);
+    setUpHideButton("acc", 0.62, 0.734);
+    setUpHideButton("tar", 0.81, 0.614);
+    setUpHideButton("pwr", 0.81, 0.674);
+    setUpHideButton("usr", 0.81, 0.734);
 
 
-    function onHideVel() {
-      hideVel = true;
-      removeListenerForID("Hide Vel");
-      button(0.62, 0.674, "HIDE", 0.045, onUnhideVel, true, "Unhide Vel");
-    }
-    function onUnhideVel() {
-      hideVel = false;
-      removeListenerForID("Unhide Vel");
-      button(0.62, 0.674, "HIDE", 0.045, onHideVel, false, "Hide Vel");
-    }
-    button(0.62, 0.674, "HIDE", 0.045, onHideVel, false, "Hide Vel");
+    // Sim Label
+    context.fillStyle = "#a9a9a9";
+    context.font = "25px Arial";
+    this.text(0.5, 0.83, "Simulator");
+    this.rect(0.5, 0.84, 0.4, 0.003, "#a9a9a9", 0);
 
-    function onHideAcc() {
-      hideAcc = true;
-      removeListenerForID("Hide Acc");
-      button(0.62, 0.734, "HIDE", 0.045, onUnhideAcc, true, "Unhide Acc");
-    }
-    function onUnhideAcc() {
-      hideAcc = false;
-      removeListenerForID("Unhide Acc");
-      button(0.62, 0.734, "HIDE", 0.045, onHideAcc, false, "Hide Acc");
-    }
-    button(0.62, 0.734, "HIDE", 0.045, onUnhideAcc, false, "Hide Acc");
+    setUpButton("gravity", 0.505, 0.86, "GRAVITY", 0.08);
 
-    function onHideTar() {
-      hideTar = true;
-      removeListenerForID("Hide Tar");
-      button(0.81, 0.734, "HIDE", 0.045, onUnhideTar, true, "Unhide Tar");
+    function onUpFriction() {
+      currentFriction += 0.1;
     }
-    function onUnhideTar() {
-      hideTar = false;
-      removeListenerForID("Unhide Tar");
-      button(0.81, 0.734, "HIDE", 0.045, onHideTar, false, "Hide Tar");
+    this.customButton(0.65, 0.92, "+", 0.01, onUpFriction, false, "frictionUp", 0.025, 0.025, 0.02);
+    function onDownFriction() {
+      currentFriction -= 0.1
     }
-    button(0.81, 0.734, "HIDE", 0.045, onHideTar, false, "Hide Tar");
+    this.customButton(0.69, 0.92, "-", 0.005, onDownFriction, false, "frictionDown", 0.025, 0.025, 0.017);
 
+    function onUpMass() {
+      currentMass += 0.1
+    }
+    this.customButton(0.78, 0.92, "+", 0.01, onUpMass, false, "massUp", 0.025, 0.025, 0.02);
+    function onDownMass() {
+      currentMass -= 0.1
+    }
+    this.customButton(0.82, 0.92, "-", 0.005, onDownMass, false, "massDown", 0.025, 0.025, 0.017);
 
   }
 
@@ -305,6 +312,32 @@ const Display = function(context) {
 
   this.setTelemetryData = function(history) {
 
+    // Set number data
+
+    this.getLatest = function(arr) {
+      return arr[arr.length - 1];
+    }
+    this.log = function(x, y, z) {
+      this.rect(x, y - 0.02, 0.08, 0.02, "#ffffff", 0);
+      context.fillStyle = "#787878";
+      context.font = "normal normal bold 15px Arial";
+      this.text(x, y, z);
+    }
+
+    var unroundedPosition = this.getLatest(history.pValues) / ((2*Math.PI) / 360);
+
+    this.log(0.5, 0.67, (Math.round(unroundedPosition * 100) / 100));
+    this.log(0.5, 0.73, Math.round(this.getLatest(history.vValues) * 10000) / 10);
+    this.log(0.5, 0.79, Math.round(this.getLatest(history.aValues) * 100000) / 10);
+    this.log(0.72, 0.67, Math.round(this.target * 100) / 100);
+    this.log(0.72, 0.73, Math.round(this.getLatest(history.power) * 100) / 100);
+    this.log(0.72, 0.79, Math.round(this.getLatest(history.usr) * 100) / 100);
+
+    this.log(0.64, 0.87, "Friction:");
+    this.log(0.79, 0.87, "Mass:");
+    this.log(0.675, 0.9, Math.round(currentFriction * 10) / 10);
+    this.log(0.805, 0.9, Math.round(currentMass * 10) / 10);
+
 
     // clear graph
     this.rect(graphLeftEdge + 0.005, 0, graphWidth + 0.01, graphBottomEdge, "#ffffff", 0);
@@ -314,11 +347,15 @@ const Display = function(context) {
     context.fillText("Telemetry", 10, 30);
 
     //target line
-    this.rect(graphLeftEdge + 0.005, graphBottomEdge - ((this.target / (360)) * graphHeight) - 0.01, graphWidth, 0.001, "#0F9D58", 0)
+    if (!hide.tar) {
+      this.rect(graphLeftEdge + 0.005, graphBottomEdge - ((this.target / (360)) * graphHeight) - 0.01, graphWidth, 0.001, "#0F9D58", 0);
+    }
 
     var yScale = {min: 0, max: 6.28};
     var yVelScale = {min: -0.1, max: 0.1};
-    var yAccelScale = {min: -0.1, max: 0.1};
+    var yAccelScale = {min: -0.01, max: 0.01};
+    var pwrScale = {min: -127, max:127};
+    var usrScale = {min: 0, max: 1};
     var standardXDelta = 0.002;
     var xDelta = 0.002;
     this.graphData = function(data, color, scale) {
@@ -357,14 +394,20 @@ const Display = function(context) {
         this.circle(graphLeftEdge + 0.01 + (xDelta * i), graphBottomEdge - (graphHeight * yVal) - 0.005, 0.001, color);
       }
     }
-    if (!hidePos) {
+    if (!hide.pos) {
       this.graphData(history.pValues, "#DB4437", yScale);
     }
-    if (!hideVel) {
+    if (!hide.vel) {
       this.graphData(history.vValues, "#4285F4", yVelScale);
     }
-    if (!hideAcc) {
+    if (!hide.acc) {
       this.graphData(history.aValues, "#F4B400", yAccelScale);
+    }
+    if (!hide.pwr) {
+      this.graphData(history.power, "#000000", pwrScale);
+    }
+    if (!hide.usr) {
+      this.graphData(history.usr, "#800080", usrScale);
     }
   }
 
@@ -444,13 +487,16 @@ const Simulation = function(display) {
 
   this.armVelocity = 0;
   this.armForce = 0.0;
-  this.friction = 0.1;
+  this.friction = currentFriction / 10;
   this.armPosition = 0;
+  this.userSet = 0;
 
   this.history = {
     pValues : [],
     vValues : [],
-    aValues : []
+    aValues : [],
+    power : [],
+    usr : []
   }
 
   this.previousPos = 0;
@@ -460,12 +506,19 @@ const Simulation = function(display) {
   };
 
   this.run = function() {
-    if (pauseGraph) {
+    if (hide.pauseGraph) {
       return
     }
-    var accel = this.armForce - (this.friction * this.armVelocity)
+    var gravityForce =  -currentMass * Math.sin(this.armPosition) * 0.005;
+    if (hide.gravity) {
+      gravityForce = 0;
+    }
+    console.log(gravityForce);
+    this.friction = currentFriction / 10;
+    var accel = (this.armForce - this.friction * this.armVelocity + gravityForce) / currentMass;
     this.armVelocity += accel;
     this.armPosition += this.armVelocity;
+    
     while(this.armPosition < 0) {
       this.armPosition += Math.PI * 2;
     }
@@ -481,12 +534,16 @@ const Simulation = function(display) {
     this.history.pValues.push(this.armPosition);
     this.history.vValues.push(this.armVelocity);
     this.history.aValues.push(accel);
+    this.history.power.push(this.armForce * 12700);
+    this.history.usr.push(this.userSet);
 
      if (this.history.pValues.length > 500) {
        this.history = {
          pValues : [],
          vValues : [],
-         aValues : []
+         aValues : [],
+         power : [],
+         usr : []
        }
      }
      var pos = this.armPosition;
@@ -516,11 +573,21 @@ function getArmPosition() {
 }
 
 function setArmPower(voltage) {
+  if (voltage > 127) {
+    voltage = 127;
+  }
+  if (voltage < -127) {
+    voltage = -127;
+  }
   sim.armForce = (voltage / 12700);
 }
 
 function setGraphTarget(position) {
   disp.target = position;
+}
+
+function setGraphVariable(x) {
+  sim.userSet = x;
 }
 
 function timeout(callback, ms) {

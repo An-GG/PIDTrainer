@@ -1,18 +1,12 @@
-/* Frank Poth 08/12/2017 */
-
 * {
-
   box-sizing:border-box;
   margin:0;
   padding:0;
-
 }
 
 html, body {
-
   height:100%;
   width:100%;
-
 }
 
 body {
@@ -23,12 +17,9 @@ body {
 }
 
 canvas {
-
   background-color:#ffffff;
   float:left;
-
 }
-
 #d1 {
   float: left;
 }
