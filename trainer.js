@@ -13,7 +13,7 @@ var fontMultiplier = 0.85;
 var hide = {
   pos:false,
   vel:false,
-  acc:true,
+  acc:false,
   tar:false,
   pwr:true,
   usr:false,
@@ -365,7 +365,7 @@ const Display = function(context) {
 
     var yScale = {min: 0, max: 6.28};
     var yVelScale = {min: -0.3, max: 0.3};
-    var yAccelScale = {min: -0.01, max: 0.01};
+    var yAccelScale = {min: -0.07, max: 0.07};
     var pwrScale = {min: -127, max:127};
     var usrScale = {min: 0, max: 1};
     var standardXDelta = 0.002;
