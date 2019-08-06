@@ -6,13 +6,29 @@
     <title>PID Trainer</title>
     <link href = "trainer.css" rel = "stylesheet" type = "text/css">
   </head>
-  <body>
-    <h1>PID Trainer</h1>
-    <canvas></canvas>
-    <script src="codemirror/lib/codemirror.js"></script>
-    <link rel="stylesheet" href="codemirror/lib/codemirror.css">
-    <script src="codemirror/mode/javascript/javascript.js"></script>
-    <script src = "trainer.js" type = "text/javascript"></script>
+  <h1 style="margin-top:2em;color:#707070;font-family:arial;">PID Trainer</h1>
+  <p style="color:#707070;font-family:arial;margin-bottom:1em">by Ankush Girotra. Carnegie Vanguard High School, Team 285.</p>
+  <div class='parent flex-parent'>
+    <div class='child flex-child'><canvas></canvas></div>
+    <div class='child flex-child' style= "margin-left:2.5em"><textarea id = "textarea"></textarea></div>
+  </div>
+  <script src="codemirror/lib/codemirror.js"></script>
+  <link rel="stylesheet" href="codemirror/lib/codemirror.css">
+  <script src="codemirror/mode/javascript/javascript.js"></script>
+  <script src = "trainer.js" type = "text/javascript"></script>
+  <h1 style="margin-top:2em;color:#707070;font-family:arial;">API</h1>
+  <hr>
+  <strong style="margin-top:1em;color:#707070;font-family:arial;font-size:160%;">getArmPosition()</strong>
+  <p style="margin-top:0.5em;color:#707070;font-family:arial;font-weight:500;">Returns a value between 0 and 360 representing the current position of the arm from the arm position sensor, where 0 represents the start position and 360 represents one full clockwise rotation.</p>
 
-  </body>
+  <strong style="margin-top:1em;color:#707070;font-family:arial;font-size:160%;">setArmPower(power)</strong>
+  <p style="margin-top:0.5em;color:#707070;font-family:arial;font-weight:500;">Sets the motor power. Takes a value between -127 and +127, where positive values apply a force in the clockwise direction.</p>
+
+  <strong style="margin-top:1em;color:#707070;font-family:arial;font-size:160%;">setGraphTarget(target)</strong>
+  <p style="margin-top:0.5em;color:#707070;font-family:arial;font-weight:500;">Takes a value between 0 and 360 representing the target position and draws a target line on the graph.</p>
+
+  <strong style="margin-top:1em;color:#707070;font-family:arial;font-size:160%;">timeout(callback, time)</strong>
+  <p style="margin-top:0.5em;color:#707070;font-family:arial;font-weight:500;">Calls the [callback] function after the time given in the [time] variable in milliseconds.</p>
+
+  <p style="margin-top:5em;color:#707070;font-family:arial;font-size:70%;">Copyright (c) Ankush Girotra 2019. All rights reserved.</p>
 </html>

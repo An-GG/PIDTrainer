@@ -1,17 +1,27 @@
-
-var myCodeMirror = CodeMirror(document.body, {
-  value: "setArmPower(127);",
-  mode:  "javascript"
-});
-
 var canvas = document.querySelector("canvas");
 canvas.addEventListener('click', function(event) {
   disp.handleClick(event);
 }, false);
 
-var currentCode = "";
+var currentCode = localStorage["code"] || "function loop() {\n  \n  timeout(loop, 20);\n}\n\nloop();";
 var isStopped = false;
+var pauseGraph = false;
 
+var hidePos = false;
+var hideVel = false;
+var hideAcc = false;
+var hideTar = false;
+var hidePwr = false;
+var hideUsr = false;
+
+var textarea = document.getElementById("textarea");
+textarea.value = currentCode;
+var myCodeMirror = CodeMirror.fromTextArea(textarea, {
+  value: currentCode,
+  mode:  "javascript",
+  lineWrapping: true,
+  lineNumbers: true
+});
 
 var mainContext = document.querySelector("canvas").getContext("2d");
 mainContext.canvas.height = 800;
@@ -41,7 +51,7 @@ const Display = function(context) {
   function removeListenerForID(id) {
     var i;
     for (i = 0; i < listeners.length; i++) {
-      if (listeners[i].id = id) {
+      if (listeners[i].id == id) {
         listeners.splice(i, 1);
       }
     }
@@ -50,7 +60,7 @@ const Display = function(context) {
   function removeListenerForFrame(frame) {
     var i;
     for (i = 0; i < listeners.length; i++) {
-      if (listeners[i].frame = frame) {
+      if (listeners[i].frame == frame) {
         listeners.splice(i, 1);
       }
     }
@@ -72,6 +82,7 @@ const Display = function(context) {
   }
 
   this.handleClick = function(event) {
+    console.log(listeners);
     var x = event.pageX - canvas.offsetLeft;
     var y = event.pageY - canvas.offsetTop;
     this.callbackListenerForPoint(x / mainContext.canvas.height, y / mainContext.canvas.width);
@@ -111,14 +122,15 @@ const Display = function(context) {
   }
 
   this.button = function(xRatio, yRatio, text, textWidth, onClick, depressed, id) {
+    var targetWidth = 0.09;
     if (depressed) {
-      this.rect(xRatio, yRatio, 0.04 + textWidth, 0.05, "#a9a9a9", 0);
+      this.rect(xRatio, yRatio, targetWidth, 0.04, "#a9a9a9", 0);
     } else {
-      this.rect(xRatio, yRatio, 0.04 + textWidth, 0.05, "#800080", 0);
+      this.rect(xRatio, yRatio, targetWidth, 0.04, "#4885ed", 0);
     }
-    context.font = "20px Arial";
+    context.font = "15px Arial";
     context.fillStyle = "#ffffff";
-    this.text(xRatio + 0.02, yRatio + 0.035, text);
+    this.text(xRatio + (targetWidth - textWidth) / 2, yRatio + 0.027, text);
     var frame = {
         x: xRatio,
         y: yRatio,
@@ -128,6 +140,7 @@ const Display = function(context) {
     addListenerForFrame(frame, onClick, id)
     return frame;
   }
+  var button = this.button.bind(this);
 
   this.circle = function(xRatioCenter, yRatioCenter, radius, color) {
     var x = xRatioCenter * context.canvas.width;
@@ -145,6 +158,12 @@ const Display = function(context) {
   }
 
   this.setupUI = function() {
+    // Controls Label
+    context.fillStyle = "#a9a9a9";
+    context.font = "25px Arial";
+    this.text(0.5, 0.45, "Controls");
+    this.rect(0.5, 0.46, 0.4, 0.003, "#a9a9a9", 0);
+
     // Reset Button
     function onReset() {
       currentCode = "";
@@ -158,15 +177,110 @@ const Display = function(context) {
         sim.armPosition = 0;
       }, 50);
     }
-    this.button(0.6, 0.7, "Reset", 0.07, onReset, false, "Reset");
+    this.button(0.61, 0.49, "RESET", 0.06, onReset, false, "Reset");
 
     // Run Button
     function onRun() {
       isTimeoutEnabled = true;
       currentCode = myCodeMirror.getValue();
+      localStorage["code"] = JSON.parse(JSON.stringify(currentCode));
       eval(currentCode);
     }
-    this.button(0.6, 0.8, "Run", 0.05, onRun, false, "Run");
+    this.button(0.505, 0.49, "RUN", 0.04, onRun, false, "Run");
+
+    // Pause Graph Resume Button
+    this.onResumeGraph = function() {
+      pauseGraph = false;
+      removeListenerForID("Resume Graph");
+      this.button(0.715, 0.49, "PAUSE", 0.06, this.onPauseGraph.bind(this), false, "Pause Graph");
+    }
+
+
+    // Pause Graph Button
+    this.onPauseGraph = function() {
+      pauseGraph = true;
+      removeListenerForID("Pause Graph");
+      this.button(0.715, 0.49, "PAUSE", 0.06, this.onResumeGraph.bind(this), true, "Resume Graph");
+    }
+    this.button(0.715, 0.49, "PAUSE", 0.06, this.onPauseGraph.bind(this), false, "Pause Graph");
+
+    // Graph Label
+    context.fillStyle = "#a9a9a9";
+    context.font = "25px Arial";
+    this.text(0.5, 0.59, "Graph");
+    this.rect(0.5, 0.6, 0.4, 0.003, "#a9a9a9", 0);
+
+    context.font = "normal normal bold 15px Arial";
+    context.fillStyle = "#DB4437";
+    this.text(0.5, 0.64, "Position");
+
+    context.fillStyle = "#4285F4";
+    this.text(0.5, 0.7, "Velocity");
+
+    context.fillStyle = "#F4B400";
+    this.text(0.5, 0.76, "Acceleration");
+
+    context.fillStyle = "#0F9D58";
+    this.text(0.72, 0.64, "Target");
+
+    context.fillStyle = "#000000";
+    this.text(0.72, 0.7, "Power");
+
+    context.fillStyle = "#800080";
+    this.text(0.72, 0.76, "User Set");
+
+    function onHidePos() {
+      button(0.62, 0.614, "HIDE", 0.045, onUnhidePos, true, "Unhide Pos");
+      hidePos = true;
+      console.log("test");
+      removeListenerForID("Hide Pos");
+
+    }
+    function onUnhidePos() {
+      hidePos = false;
+      removeListenerForID("Unhide Pos");
+      button(0.62, 0.614, "HIDE", 0.045, onHidePos, false, "Hide Pos");
+    }
+    button(0.62, 0.614, "HIDE", 0.045, onHidePos, false, "Hide Pos");
+
+
+    function onHideVel() {
+      hideVel = true;
+      removeListenerForID("Hide Vel");
+      button(0.62, 0.674, "HIDE", 0.045, onUnhideVel, true, "Unhide Vel");
+    }
+    function onUnhideVel() {
+      hideVel = false;
+      removeListenerForID("Unhide Vel");
+      button(0.62, 0.674, "HIDE", 0.045, onHideVel, false, "Hide Vel");
+    }
+    button(0.62, 0.674, "HIDE", 0.045, onHideVel, false, "Hide Vel");
+
+    function onHideAcc() {
+      hideAcc = true;
+      removeListenerForID("Hide Acc");
+      button(0.62, 0.734, "HIDE", 0.045, onUnhideAcc, true, "Unhide Acc");
+    }
+    function onUnhideAcc() {
+      hideAcc = false;
+      removeListenerForID("Unhide Acc");
+      button(0.62, 0.734, "HIDE", 0.045, onHideAcc, false, "Hide Acc");
+    }
+    button(0.62, 0.734, "HIDE", 0.045, onUnhideAcc, false, "Hide Acc");
+
+    function onHideTar() {
+      hideTar = true;
+      removeListenerForID("Hide Tar");
+      button(0.81, 0.734, "HIDE", 0.045, onUnhideTar, true, "Unhide Tar");
+    }
+    function onUnhideTar() {
+      hideTar = false;
+      removeListenerForID("Unhide Tar");
+      button(0.81, 0.734, "HIDE", 0.045, onHideTar, false, "Hide Tar");
+    }
+    button(0.81, 0.734, "HIDE", 0.045, onHideTar, false, "Hide Tar");
+
+
   }
 
   var graphLeftEdge = 0.05;
@@ -190,14 +304,17 @@ const Display = function(context) {
   }
 
   this.setTelemetryData = function(history) {
+
+
     // clear graph
     this.rect(graphLeftEdge + 0.005, 0, graphWidth + 0.01, graphBottomEdge, "#ffffff", 0);
+    this.rect(0, 0, graphWidth + 0.01, graphLeftEdge + 0.005, "#ffffff", 0);
     context.fillStyle = "#a9a9a9";
     context.font = "25px Arial";
     context.fillText("Telemetry", 10, 30);
 
     //target line
-    this.rect(graphLeftEdge + 0.005, graphBottomEdge - ((this.target / (Math.PI * 2)) * graphHeight) - 0.01, graphWidth, 0.001, "#0F9D58", 0)
+    this.rect(graphLeftEdge + 0.005, graphBottomEdge - ((this.target / (360)) * graphHeight) - 0.01, graphWidth, 0.001, "#0F9D58", 0)
 
     var yScale = {min: 0, max: 6.28};
     var yVelScale = {min: -0.1, max: 0.1};
@@ -228,6 +345,7 @@ const Display = function(context) {
         }
       }
       var autoScale = highest - lowest;
+
       for (i = 0; i < data.length; i++) {
         var yVal;
         if (scale == "auto") {
@@ -235,13 +353,19 @@ const Display = function(context) {
         } else {
           yVal = (data[i] - scale.min) / (scale.max - scale.min);
         }
+
         this.circle(graphLeftEdge + 0.01 + (xDelta * i), graphBottomEdge - (graphHeight * yVal) - 0.005, 0.001, color);
       }
     }
-    this.graphData(history.pValues, "#DB4437", yScale);
-    this.graphData(history.vValues, "#4285F4", yVelScale);
-    this.graphData(history.aValues, "#F4B400", "auto");
-
+    if (!hidePos) {
+      this.graphData(history.pValues, "#DB4437", yScale);
+    }
+    if (!hideVel) {
+      this.graphData(history.vValues, "#4285F4", yVelScale);
+    }
+    if (!hideAcc) {
+      this.graphData(history.aValues, "#F4B400", yAccelScale);
+    }
   }
 
   this.drawBackgroundGraphics = function() {
@@ -336,6 +460,9 @@ const Simulation = function(display) {
   };
 
   this.run = function() {
+    if (pauseGraph) {
+      return
+    }
     var accel = this.armForce - (this.friction * this.armVelocity)
     this.armVelocity += accel;
     this.armPosition += this.armVelocity;
@@ -350,6 +477,7 @@ const Simulation = function(display) {
       armVelocity: this.armVelocity,
       armAcceleration: accel
     }
+
     this.history.pValues.push(this.armPosition);
     this.history.vValues.push(this.armVelocity);
     this.history.aValues.push(accel);
@@ -384,7 +512,7 @@ var outputPosition = 0;
 var isTimeoutEnabled = true;
 
 function getArmPosition() {
-  return outputPosition;
+  return (outputPosition / (2*Math.PI))*360;
 }
 
 function setArmPower(voltage) {

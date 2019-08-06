@@ -16,7 +16,7 @@ html, body {
 }
 
 body {
-  background-color:#202830;
+  background-color:#E0E0E0;
   color:#ffffff;
   display:grid;
   justify-content:center;
@@ -25,5 +25,20 @@ body {
 canvas {
 
   background-color:#ffffff;
+  float:left;
 
+}
+
+#d1 {
+  float: left;
+}
+
+#d2 {
+  float: right;
+}
+.flex-parent {
+  display: flex;
+}
+.flex-child {
+  flex: 1;
 }
