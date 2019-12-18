@@ -3,7 +3,7 @@ canvas.addEventListener('click', function(event) {
   disp.handleClick(event);
 }, false);
 
-var currentCode = localStorage["code"] || "function loop() {\n\n\n}\n\nloop();";
+var currentCode = localStorage["code"] || "var oldError = 0;\nvar totalError = 0;\n\nfunction loop() {\n  \n  var target = 90;\n  setGraphTarget(target);\n  var error = target - getArmPosition();\n  \n  var kP = 2.5;  \n  var kI = 0.02;	// Try Setting These Constants To Zero\n  var kD = -1.2;\n  \n  var P = error*kP;\n  var I = totalError*kI;\n  var D = (error - oldError)*kD;\n  \n  \n  \n  if (Math.abs(error) < 30) {\n  	totalError += error;   // Only Accumulate Error Close To Target\n  } else {\n    totalError = 0;\n  }\n  \n  setArmPower(P+I+D);\n  timeout(loop, 30); \n}\n\nloop();";
 var isStopped = false;
 
 var currentMass = 1;
